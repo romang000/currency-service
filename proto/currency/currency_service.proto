@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package currency;
+
+option go_package = "pkg/currency";
+
+service CurrencyService {
+  rpc GetRate(GetRateRequest) returns (GetRateResponse);
+  rpc SetRate(SetRateRequest) returns (SetRateResponse);
+}
+
+message GetRateRequest {
+  string currency = 1;
+  google.protobuf.Timestamp date_from = 2;
+  google.protobuf.Timestamp date_to = 3;
+}
+
+message GetRateResponse {
+  string currency = 1;
+  repeated RateRecord rates = 2;
+}
+
+message SetRateRequest{
+  float rate = 1;
+  string baseCurrency = 2;
+  string targetCurrency = 3;
+  google.protobuf.Timestamp date = 4;
+}
+
+message SetRateResponse{
+  bool success = 1;
+  //string err = 2;
+}
+
+message RateRecord {
+  google.protobuf.Timestamp date = 1;
+  float rate = 2;
+}
+
+// Тип decimal
+// https://github.com/googleapis/googleapis/blob/master/google/type/decimal.proto
+// https://github.com/googleapis/googleapis/blob/master/google/type/money.proto

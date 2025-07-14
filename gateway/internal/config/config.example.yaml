@@ -1,0 +1,15 @@
+server:
+  port: ":8080"
+
+auth:
+  base_url: "http://localhost:8082"
+
+database:
+  host: "localhost"
+  port: 5432
+  user: "admin"
+  password: "password"
+  name: "currency_db"
+
+grpc:
+  currency_service_url: "localhost:8090"
