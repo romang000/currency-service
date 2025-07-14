@@ -9,7 +9,7 @@ database:
   port: 5432
   user: "admin"
   password: "password"
-  name: "currency_db"
+  name: "user_db"
 
 grpc:
   currency_service_url: "localhost:8090"

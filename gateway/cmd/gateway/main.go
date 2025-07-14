@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/romapopov1212/currency-service/gateway/internal/db"
 	"log"
 	"net/http"
 	"os/signal"
@@ -64,6 +65,11 @@ func run() error {
 		return fmt.Errorf("authClient.Ping: %w", err)
 	}
 
+	db, _, err := db.NewDatabaseConnection(cfg.Database)
+	if err != nil {
+		log.Fatalf("error init database connection: %v", err)
+	}
+
 	if resp != "pong" {
 		return fmt.Errorf("auth client answered with invalid response: %w", err)
 	}
@@ -88,7 +94,11 @@ func run() error {
 		currencyService := currency.NewService(currencyClient)
 	*/
 
-	userRepo := repository.NewUser()
+	userRepo, err := repository.NewUser(db)
+	if err != nil {
+		log.Fatalf("error init exchange rate repository: %v", err)
+	}
+
 	authService := service.NewAuth(authClient, userRepo)
 	currencyService := service.NewCurrency(currencyClient)
 

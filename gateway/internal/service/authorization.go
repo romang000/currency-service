@@ -30,9 +30,9 @@ func NewAuth(authClient authClientInterface, userRepo repository.UserRepository)
 	}
 }
 
-func (s *AuthService) Register(req dto.RegisterRequest) error {
+func (s *AuthService) Register(ctx context.Context, req dto.RegisterRequest) error {
 	user := repository.User{Login: req.Username, Password: req.Password}
-	if err := s.userRepo.AddUser(user); err != nil {
+	if err := s.userRepo.AddUser(ctx, user); err != nil {
 		return fmt.Errorf("userRepo.AddUser: %w", err)
 	}
 
@@ -45,7 +45,7 @@ func (s *AuthService) Login(ctx context.Context, login, password string) (string
 		return "", fmt.Errorf("userRepo.GetUser: %w", err)
 	}
 
-	if user.Password != password {
+	if !repository.CheckPassword(password, user.Password) {
 		return "", ErrInvalidCredentials
 	}
 
