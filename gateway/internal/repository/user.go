@@ -2,8 +2,11 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"errors"
-	"sync"
+	"fmt"
+	_ "github.com/lib/pq"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var (
@@ -17,37 +20,66 @@ type User struct {
 }
 
 type UserRepository struct {
-	users map[string]User
-	mu    *sync.RWMutex
+	db *sql.DB
 }
 
-func NewUser() UserRepository {
-	return UserRepository{
-		users: make(map[string]User),
-		mu:    &sync.RWMutex{},
-	}
+func NewUser(db *sql.DB) (UserRepository, error) {
+	return UserRepository{db: db}, nil
 }
 
-func (repo *UserRepository) AddUser(user User) error {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
+func (repo *UserRepository) AddUser(ctx context.Context, user User) error {
 
-	if _, exists := repo.users[user.Login]; exists {
+	if _, err := repo.GetUser(ctx, user.Login); err == nil {
 		return ErrUserAlreadyExist
 	}
-	repo.users[user.Login] = user
 
+	hashedPassword, err := hashPassword(user.Password)
+	if err != nil {
+		return err
+	}
+	_, err = repo.db.ExecContext(
+		ctx,
+		`INSERT INTO users (username, password_hash) VALUES ($1, $2)`,
+		user.Login, hashedPassword,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to save user: %w", err)
+	}
 	return nil
 }
 
-func (repo *UserRepository) GetUser(_ context.Context, login string) (User, error) {
-	repo.mu.RLock()
-	defer repo.mu.RUnlock()
+func (repo *UserRepository) GetUser(ctx context.Context, login string) (User, error) {
+	var user User
+	err := repo.db.QueryRowContext(
+		ctx,
+		`SELECT username, password_hash FROM users
+				WHERE username = $1
+			`,
+		login,
+	).Scan(&user.Login, &user.Password)
 
-	user, exists := repo.users[login]
-	if !exists {
-		return User{}, ErrUserNotFound
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return User{}, ErrUserNotFound
+		}
+		return User{}, err
 	}
 
 	return user, nil
+}
+
+func hashPassword(password string) (string, error) {
+	res, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", fmt.Errorf("failed hash password: %w", err)
+	}
+	return string(res), nil
+}
+
+func CheckPassword(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	if err != nil {
+		return false
+	}
+	return true
 }

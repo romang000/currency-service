@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"github.com/romapopov1212/currency-service/gateway/internal/service"
 	"log"
 	"net/http"
 
@@ -30,6 +31,8 @@ func (s *controller) handleError(c *gin.Context, err error) {
 		log.Printf("unexpected status code error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unexpected server error"}) // Обычный ответ клиенту
 	case errors.Is(err, auth.ErrInvalidCredentials):
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+	case errors.Is(err, service.ErrInvalidCredentials):
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 	case errors.Is(err, auth.ErrTokenGeneration):
 		c.JSON(

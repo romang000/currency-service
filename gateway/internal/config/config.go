@@ -34,6 +34,11 @@ type GRPCConfig struct {
 	CurrencyServiceURL string `mapstructure:"currency_service_url"`
 }
 
+func (dc DatabaseConfig) ToDSN() string {
+	// todo
+	return ""
+}
+
 func LoadConfig(path string) (Config, error) {
 	var cfg Config
 	viper.SetConfigFile(path)
